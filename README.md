@@ -64,7 +64,7 @@ After a search direction is obtained, the step size is determined by requiring t
 ```julia
 setprecision(prec, base = 10)
 ```
-The default value of the global variable `T` is set to `BigFloat`, which supports arbitrary precision arithmetic. 
+The default value of the global variable `T` is `BigFloat`, which supports arbitrary precision arithmetic. 
 
 If accuracy is not a concern, the user can manually set `T` to other arithmetic types for improved performance, `T = Float64` for example.
 
