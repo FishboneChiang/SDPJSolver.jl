@@ -7,7 +7,7 @@ A native Julia semidefinite program (SDP) solver.
 ## Problem statement
 The function
 ```julia
-sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iterMax)
+sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iterMax, mode)
 ```
 
 solves the following SDP:
@@ -58,23 +58,39 @@ Mehrotra's predictor-corrector method is used to accelerate convergence.
 
 After a search direction is obtained, the step size is determined by requiring the positivity of $X$ and $Y$.
 
-## Arguments
+## Inputs
+
 `prec`: arithemetic precision in base-10, which is equivalent to
 ```julia
 setprecision(prec, base = 10)
 ```
 The default value of the global variable `T` is set to `BigFloat`, which supports arbitrary precision arithmetic. 
+
 If accuracy is not a concern, the user can manually set `T` to other arithmetic types for improved performance, `T = Float64` for example.
+
+`c`: $m$-element `Vector{T}`
+
+`A`: $L$-element `Vector{Array{T, 3}}`
+
+`C`: $L$-element `Vector{Matrix{T}}`
+
+`B`: $m$ x $n$ `Matrix{T}`
+
+`b`: $n$-element `Vector{T}`
 
 `β`: factor of reduction in μ in each step
 
 `Ωp` and `Ωd` are initial values for the matrices X and Y: $X = Ω_p I, Y = Ω_d I$
 
-The iteration terminates if
-- the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively, or
-- the number of iteration exceeds `iterMax`.
+`mode`: can be either ```"opt"``` or ```"feas"```.
 
-## Output
+The iteration terminates if any of the followings hold
+- `mode = "opt"`, and the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively.
+- `mode = "feas"`, and the the primal/dual infeasibilities reach their thresholds.
+- The number of iteration exceeds `iterMax`.
+
+
+## Outputs
 The function `sdp()` returns a dictionary with the following keys:
 - "x": value of the variable `x`
 - "X": value of the variable `X`
