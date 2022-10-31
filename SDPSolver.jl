@@ -83,41 +83,12 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     return p_res, d_res, dx, dX, dy, dY
 end
 
-"""
-    sdp(prec, c, A, C, B, b, β, Ωp, Ωq, ϵ_gap, ϵ_primal, ϵ_dual, iterMax)
+function sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iterMax, mode)
 
-A semidefinite program solver that uses the primal-dual interior point method.
-
-`prec`: arithemetic precision in base-10, which is equivalent to
-```jldoctest
-setprecision(prec, base = 10)
-```
-
-# Primal: 
-    Minimize    c^T x
-    subject to  X = ∑ x_i A_i - C
-                B^T x = b
-                X >= 0
-
-# Dual: 
-    Maximize    tr(C Y) + b^T y 
-    subject to  tr(A_* Y) + B y + c = 0
-                Y >= 0 
-
-# Domain:
-    x ∈ R^m
-    X, Y ∈ S^k
-    A_i, C ∈ S^k 
-    B ∈ R^(m*n)
-    b, y ∈ R^n
-
-The deformed KKT conditions for the interior point method are:
-    (1) Primal feasibility, 
-    (2) Dual feasibility, 
-    (3) Complementarity: tr(XY) = μI.
-
-"""
-function sdp(prec, c, A, C, B, b, β, Ωp, Ωq, ϵ_gap, ϵ_primal, ϵ_dual, iterMax)
+    if !(mode ∈ ["opt", "feas"])
+        @error "Mode should be either \"opt\" or \"feas\"!"
+        return
+    end
 
     setprecision(prec, base=10)
 
@@ -126,7 +97,7 @@ function sdp(prec, c, A, C, B, b, β, Ωp, Ωq, ϵ_gap, ϵ_primal, ϵ_dual, iter
     x, y = zeros(T, m), zeros(T, n)
     X, Y, μ = Array{Matrix{T}}(undef, L), Array{Matrix{T}}(undef, L), Array{T}(undef, L)
     for l in 1:L
-        X[l], Y[l] = Matrix(Ωp*I, size(A[l])[2:3]), Matrix(Ωq*I, size(A[l])[2:3])
+        X[l], Y[l] = Matrix(Ωp*I, size(A[l])[2:3]), Matrix(Ωd*I, size(A[l])[2:3])
         μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1]
     end
 
@@ -140,8 +111,13 @@ function sdp(prec, c, A, C, B, b, β, Ωp, Ωq, ϵ_gap, ϵ_primal, ϵ_dual, iter
     println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tstep\t\ttime")
     println("=====================================================================================================================")
     @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res
-    if 0 < dual_gap < ϵ_gap && p_res < ϵ_primal && d_res < ϵ_dual 
-        return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+    if p_res < ϵ_primal && d_res < ϵ_dual 
+        if mode == "opt" && 0 < dual_gap < ϵ_gap
+            return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+        end
+        if mode == "feas"
+            return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+        end
     end
 
     while iter < iterMax
@@ -168,15 +144,19 @@ function sdp(prec, c, A, C, B, b, β, Ωp, Ωq, ϵ_gap, ϵ_primal, ϵ_dual, iter
         iter += 1
         @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res t t2-t1
 
-        if 0 < dual_gap < ϵ_gap && p_res < ϵ_primal && d_res < ϵ_dual 
-            return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+        if p_res < ϵ_primal && d_res < ϵ_dual 
+            if mode == "opt" && 0 < dual_gap < ϵ_gap
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+            end
+            if mode == "feas"
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+            end
         end
 
         μ = β * tr.(X .* Y) ./ [size(XX)[1] for XX in X]
-        # μ = β * μ
     end
 
-    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Cannot reach optimality within $(iterMax) iterations.")
+    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Cannot reach optimality/feasibility within $(iterMax) iterations.")
 
 end
 
