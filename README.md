@@ -84,7 +84,7 @@ If accuracy is not a concern, the user can manually set `T` to other arithmetic 
 
 `mode`: can be either ```"opt"``` or ```"feas"```.
 
-The iteration terminates if any of the followings hold
+The iteration terminates if any of the followings hold:
 - `mode = "opt"`, and the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively.
 - `mode = "feas"`, and the the primal/dual infeasibilities reach their thresholds.
 - The number of iteration exceeds `iterMax`.
@@ -98,4 +98,8 @@ The function `sdp()` returns a dictionary with the following keys:
 - "Y": value of the variable `Y`
 - "p-Obj": value of the primal objective function
 - "d-Obj": value of the dual objective fucntion
-- "status": reports the status of optimization. Can be either "Optimal" or "Cannot reach optimality within `iterMax` iterations."
+- "status": reports the status of optimization. Can be either 
+    * "Optimal"
+    * "Feasible"
+    * "Cannot reach optimality within `iterMax` iterations."
+ 
