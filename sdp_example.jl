@@ -12,8 +12,6 @@ function test()
     c = [2, 3]
     B = Matrix{T}(undef, 2, 0)
     b = Array{T}(undef, 0)
-    # B = [1 0 0; 0 1 0] |> transpose
-    # b = [1, 1]
 
     prob = sdp(100, c, A, C, B, b, 0.1, 1, 1, 1e-10, 1e-10, 1e-10, 200, "opt")
     println("\nStatus: ", prob["status"])
