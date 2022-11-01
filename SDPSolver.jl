@@ -25,8 +25,9 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
         @threads for i in 1:m
             for l in 1:L
                 SS = Y[l] * A[l][i, :, :] * invX[l]
-                for j in 1:m
+                for j in i:m
                     S[l][i, j] = sum(SS .* A[l][j, :, :])
+                    S[l][j, i] = S[l][i, j]
                 end
             end
         end
@@ -62,7 +63,6 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
         R = [γ[l] * μ[l] * I - X[l] * Y[l] - dX[l] * dY[l] for l in 1:L]
         
         v = zeros(T, m)
-        dZ = Array{Matrix{T}}(undef, m)
         @threads for l in 1:L
             Z[l] = X[l] \ (P[l] * Y[l] - R[l])
         end
@@ -159,4 +159,3 @@ function sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iter
     return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Cannot reach optimality/feasibility within $(iterMax) iterations.")
 
 end
-
