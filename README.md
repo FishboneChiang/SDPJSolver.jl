@@ -1,7 +1,7 @@
 # SDPSolver
-A native Julia semidefinite program (SDP) solver.
+A native Julia [semidefinite program](https://en.wikipedia.org/wiki/Semidefinite_programming) (SDP) solver.
 - Motivated by the eft/modular bootstrap programs, SDPSolver is a parallelized, arbitrary precision SDP solver based on the primal-dual interior-point method. 
-- SDPSolver is largely inspired by SDPA and SDPB, with slightly different parallelization architecture.
+- SDPSolver is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
 - The solver is still in a development stage, which is far from fully optimized and might contain bugs. Corrections and suggestions are welcome and will get serious attention : )
 
 ## Problem statement
@@ -12,7 +12,7 @@ sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iterMax, mode
 
 solves the following SDP:
 
-### (Primal)
+### Primal
 $$
     \begin{aligned}
         \text{Minimize } \quad & c^T x \\
@@ -21,7 +21,7 @@ $$
     \end{aligned}
 $$
 
-### (Dual)
+### Dual
 $$
     \begin{aligned}
         \text{Maximize } \quad & \sum_l tr(C^{(l)} Y^{(l)}) + b^T y \\
@@ -30,7 +30,7 @@ $$
     \end{aligned}
 $$
 
-### (Domain)
+### Domain
 $$
     \begin{aligned}
         x & \in \mathbb{R}^m \\
@@ -56,7 +56,7 @@ $$ X^{(l)} Y^{(l)} = \mu^{(l)} I $$
 
 Mehrotra's predictor-corrector method is used to accelerate convergence. 
 
-After a search direction is obtained, the step size is determined by requiring the positivity of $X$ and $Y$.
+After a search direction is obtained, the step size is determined by requiring the that $X$ and $Y$ remain positive.
 
 ## Inputs
 
