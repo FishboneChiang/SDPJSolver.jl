@@ -25,7 +25,7 @@ $$
 $$
     \begin{aligned}
         \text{Maximize } \quad & \sum_l tr(C^{(l)} Y^{(l)}) + b^T y \\
-        \text{subject to } \quad & \sum_l tr(A_{\star}^{(l)} Y^{(l)}) + B y + c = 0 \\
+        \text{subject to } \quad & \sum_l tr(A_{\star}^{(l)} Y^{(l)}) + B y - c = 0 \\
         & Y^{(l)} \geq 0, \quad l = 1, 2, ..., L
     \end{aligned}
 $$
@@ -48,7 +48,7 @@ $$ X^{(l)} = \sum_i x_i A_i^{(l)} - C^{(l)} $$
 
 - Dual feasibility
 
-$$ \sum_l tr(A_{\star}^{(l)} Y^{(l)}) + B y + c = 0 $$
+$$ \sum_l tr(A_{\star}^{(l)} Y^{(l)}) + B y - c = 0 $$
 
 - Complementarity
 
