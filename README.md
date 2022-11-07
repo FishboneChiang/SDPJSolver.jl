@@ -1,10 +1,10 @@
 # SDPJSolver
-A native Julia [semidefinite program](https://en.wikipedia.org/wiki/Semidefinite_programming) (SDP) solver.
-- Motivated by the eft/modular bootstrap programs, SDPJSolver is a parallelized, arbitrary precision SDP solver based on the primal-dual interior-point method. 
-- SDPJSolver is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
+SDPJ is a native Julia [semidefinite program](https://en.wikipedia.org/wiki/Semidefinite_programming) (SDP) solver.
+- Motivated by the eft/modular bootstrap programs, SDPJ is a parallelized, arbitrary precision SDP solver based on the primal-dual interior-point method. 
+- SDPJ is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
 - The solver is still in a development stage, which is far from fully optimized and might contain bugs. Corrections and suggestions are welcome and will get serious attention : )
 
-## The Optimization Problem
+## The optimization problem
 The function
 ```julia
 sdp(c, A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
@@ -40,7 +40,7 @@ $$
     \end{aligned}
 $$
     
-## Interior point method
+## Interior-point method
 In each iteration, the program solves the following deformed KKT conditions to determine the Newton step:
 - Primal feasibility
 
@@ -56,9 +56,9 @@ $$ X^{(l)} Y^{(l)} = \mu^{(l)} I $$
 
 Mehrotra's predictor-corrector method is used to accelerate convergence. 
 
-After a search direction is obtained, the step size is determined by requiring the that $X$ and $Y$ remain positive.
+After a search direction is obtained, the step size is determined by requiring that $X$ and $Y$ remain positive.
 
-## The Feasibility Problem
+## The feasibility problem
 The function
 ```julia
 findFeasible(A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
@@ -75,7 +75,7 @@ $$
 
 If $t^* \geq 0$, the problem is infeasible; otherwise, the problem is feasible.
 
-⚠️ Current issue: It seems that `findFeasible()` will fail if the feasible set is unbounded but works fine when the problem is infeasible.
+⚠️ Known issue: It seems that `findFeasible()` will fail if the feasible set is unbounded but works fine when the problem is infeasible.
 
 ## Inputs
 
@@ -108,7 +108,7 @@ setArithmeticType(Float64)
 
 The iteration terminates if any of the following occurs:
 - The function `sdp()` is used, and the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively.
-- The function `findFeasible()` is used, and the primal/dual infeasibilities reach their thresholds, with a certificate of $t > 0$ or $t < 0$ found.
+- The function `findFeasible()` is used, and the primal/dual infeasibilities reach their thresholds, with a certificate of $t^* > 0$ or $t^* < 0$ found.
 - The number of iteration exceeds `iterMax`.
 
 
