@@ -1,7 +1,3 @@
-module SDPSolver
-
-export setArithmeticType, sdp, findFeasible
-
 using LinearAlgebra, Base.Threads, Printf
 
 T::Type = BigFloat
@@ -217,5 +213,3 @@ function findFeasible(A, C, B, b;
     return prob
 
 end
-
-end # module
