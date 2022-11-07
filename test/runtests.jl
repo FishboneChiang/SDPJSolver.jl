@@ -1,7 +1,7 @@
-using SDPSolver
+using SDPCSolver
 using Test
 
-@testset "SDPSolver.jl" begin
+@testset "SDPCSolver.jl" begin
 
     function test_float()
         @info "Testing Float64 arithmetic..."
