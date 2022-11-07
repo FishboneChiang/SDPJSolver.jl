@@ -1,7 +1,7 @@
-# SDPCSolver
+# SDPJSolver
 A native Julia [semidefinite program](https://en.wikipedia.org/wiki/Semidefinite_programming) (SDP) solver.
-- Motivated by the eft/modular bootstrap programs, SDPCSolver is a parallelized, arbitrary precision SDP solver based on the primal-dual interior-point method. 
-- SDPCSolver is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
+- Motivated by the eft/modular bootstrap programs, SDPJSolver is a parallelized, arbitrary precision SDP solver based on the primal-dual interior-point method. 
+- SDPJSolver is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
 - The solver is still in a development stage, which is far from fully optimized and might contain bugs. Corrections and suggestions are welcome and will get serious attention : )
 
 ## The Optimization Problem
