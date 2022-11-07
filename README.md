@@ -4,10 +4,10 @@ A native Julia [semidefinite program](https://en.wikipedia.org/wiki/Semidefinite
 - SDPSolver is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
 - The solver is still in a development stage, which is far from fully optimized and might contain bugs. Corrections and suggestions are welcome and will get serious attention : )
 
-## Problem statement
+## The Optimization Problem
 The function
 ```julia
-sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iterMax, mode)
+sdp(c, A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
 ```
 
 solves the following SDP:
@@ -58,6 +58,21 @@ Mehrotra's predictor-corrector method is used to accelerate convergence.
 
 After a search direction is obtained, the step size is determined by requiring the that $X$ and $Y$ remain positive.
 
+## The Feasibility Problem
+The function
+```julia
+findFeasible(A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
+```
+determines whether the SDP above is feasible. Note that the arguments are basically the same as `sdp()` except no vector `c` for the objective function is needed. The function converts the feasibility problem to the following optimization problem:
+$$
+    \begin{aligned}
+        \text{Minimize } \quad & t \\
+        \text{subject to } \quad & X^{(l)} = \sum_i x_i A_i^{(l)} - C^{(l)} + t I\geq 0, \quad l = 1, 2, ..., L \\
+        & B^T x = b 
+    \end{aligned}
+$$
+If $t^* \geq 0$, the problem is feasible; otherwise, the problem is infeasible.
+
 ## Inputs
 
 `prec`: arithemetic precision in base-10, which is equivalent to
@@ -66,7 +81,10 @@ setprecision(prec, base = 10)
 ```
 The default value of the global variable `T` is `BigFloat`, which supports arbitrary precision arithmetic. 
 
-If accuracy is not a concern, the user can manually set `T` to other arithmetic types for improved performance, `T = Float64` for example.
+If accuracy is not a concern, the user can manually set `T` to other arithmetic types for improved performance, `Float64` for example. This can be done through the `setArithmeticType()` function:
+```julia
+setArithmeticType(Float64)
+```
 
 `c`: $m$-element `Vector{T}`
 
@@ -84,9 +102,9 @@ If accuracy is not a concern, the user can manually set `T` to other arithmetic 
 
 `mode`: can be either ```"opt"``` or ```"feas"```.
 
-The iteration terminates if any of the followings hold:
-- `mode = "opt"`, and the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively.
-- `mode = "feas"`, and the the primal/dual infeasibilities reach their thresholds.
+The iteration terminates if any of the following occurs:
+- The function `sdp()` is used, and the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively.
+- The function `findFeasible()` is used, and the primal/dual infeasibilities reach their thresholds, with a certificate of $t > 0$ or $t < 0$ found.
 - The number of iteration exceeds `iterMax`.
 
 

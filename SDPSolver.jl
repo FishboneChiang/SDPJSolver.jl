@@ -1,4 +1,23 @@
+module SDPSolver
+
+export setArithmeticType, sdp, findFeasible
+
 using LinearAlgebra, Base.Threads, Printf
+
+T::Type = BigFloat
+mode::String = "opt"
+
+function setArithmeticType(type)
+    global T = type
+end
+
+function setMode(str)
+    if str ∈ ["opt", "feas"]
+        global mode = str
+    else
+        @error "Mode should be either \"opt\" or \"feas\"!"
+    end
+end
 
 function getResidue(μ, x, X, y, Y, c, A, C, B, b)
     m, L = length(x), length(A)
@@ -83,14 +102,14 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     return p_res, d_res, dx, dX, dy, dY
 end
 
-function sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iterMax, mode)
+function sdp(c, A, C, B, b; 
+            β = 0.1, Ωp = 1, Ωd = 1,
+            ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, 
+            iterMax = 200, prec = 300)
 
-    if !(mode ∈ ["opt", "feas"])
-        @error "Mode should be either \"opt\" or \"feas\"!"
-        return
-    end
-
-    setprecision(prec, base=10)
+    # Set arithmetic type and precision
+    if T == BigFloat setprecision(prec, base=10) end
+    # c, A, C, B, b = T.(c), T.(A), T.(C), T.(B), T.(b)
 
     # Initialize variables
     L, m, n = length(A), size(A[1])[1], length(b)
@@ -116,7 +135,12 @@ function sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iter
             return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
         end
         if mode == "feas"
-            return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+            if dual_obj <= primal_obj <= 0
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+            end
+            if primal_obj >= dual_obj >= 0
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Infeasible")
+            end
         end
     end
 
@@ -149,13 +173,49 @@ function sdp(prec, c, A, C, B, b, β, Ωp, Ωd, ϵ_gap, ϵ_primal, ϵ_dual, iter
                 return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
             end
             if mode == "feas"
-                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+                if dual_obj <= primal_obj < 0
+                    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+                end
+                if primal_obj >= dual_obj > 0
+                    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Infeasible")
+                end
             end
         end
 
         μ = β * tr.(X .* Y) ./ [size(XX)[1] for XX in X]
     end
 
-    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Cannot reach optimality/feasibility within $(iterMax) iterations.")
+    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Cannot reach optimality (feasibility) within $(iterMax) iterations.")
 
 end
+
+function findFeasible(A, C, B, b; 
+                    β = 0.1, Ωp = 1, Ωd = 1, 
+                    ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, 
+                    iterMax = 200, prec = 300)
+
+    # Initialize variables
+    L, m, n = length(A), size(A[1])[1], length(b)
+
+    # sdp parameters
+    AA = Array{Any}(undef, L)
+    for l in 1:L
+        k = size(A[l])[2]
+        AA[l] = vcat(reshape(Matrix{T}(I, k, k), 1, k, k), A[l])
+    end
+    cc = [i==1 ? 1 : 0 for i in 1:m+1]
+    BB = vcat(zeros(T, 1, n), B)
+
+    setMode("feas")
+
+    prob = sdp(cc, AA, C, BB, b; 
+            β = β, Ωp = Ωp, Ωd = Ωd, 
+            ϵ_gap = ϵ_gap, ϵ_primal = ϵ_primal, ϵ_dual = ϵ_dual, iterMax = iterMax, prec = prec)
+
+    setMode("opt")
+
+    return prob
+
+end
+
+end # module
