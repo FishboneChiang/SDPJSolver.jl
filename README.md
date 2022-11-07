@@ -64,6 +64,7 @@ The function
 findFeasible(A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
 ```
 determines whether the SDP above is feasible. Note that the arguments are basically the same as `sdp()` except no vector `c` for the objective function is needed. The function converts the feasibility problem to the following optimization problem:
+
 $$
     \begin{aligned}
         \text{Minimize } \quad & t \\
@@ -71,6 +72,7 @@ $$
         & B^T x = b 
     \end{aligned}
 $$
+
 If $t^* \geq 0$, the problem is feasible; otherwise, the problem is infeasible.
 
 ## Inputs
@@ -81,7 +83,7 @@ setprecision(prec, base = 10)
 ```
 The default value of the global variable `T` is `BigFloat`, which supports arbitrary precision arithmetic. 
 
-If accuracy is not a concern, the user can manually set `T` to other arithmetic types for improved performance, `Float64` for example. This can be done through the `setArithmeticType()` function:
+If accuracy is not a concern, the user can manually set `T` to other arithmetic types for improved performance, say `Float64`:
 ```julia
 setArithmeticType(Float64)
 ```
@@ -119,5 +121,6 @@ The function `sdp()` returns a dictionary with the following keys:
 - "status": reports the status of optimization. Can be either 
     * "Optimal"
     * "Feasible"
-    * "Cannot reach optimality within `iterMax` iterations."
- 
+    * "Infeasible"
+    * "Cannot reach optimality (feasibility) within `iterMax` iterations."
+
