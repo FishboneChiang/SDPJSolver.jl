@@ -73,7 +73,7 @@ $$
     \end{aligned}
 $$
 
-If $t^* \geq 0$, the problem is feasible; otherwise, the problem is infeasible.
+If $t^* \geq 0$, the problem is infeasible; otherwise, the problem is feasible.
 
 ## Inputs
 
