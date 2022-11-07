@@ -75,6 +75,8 @@ $$
 
 If $t^* \geq 0$, the problem is infeasible; otherwise, the problem is feasible.
 
+⚠️ Current issue: It seems that `findFeasible()` will fail if the feasible set is unbounded but works fine when the problem is infeasible.
+
 ## Inputs
 
 `prec`: arithemetic precision in base-10, which is equivalent to
