@@ -1,4 +1,4 @@
-name = "SDPSolver"
+name = "SemidefiniteOptimization"
 uuid = "e804a123-63fa-4b55-87b9-d771b4a5c602"
 authors = ["Li-Yuan Chiang"]
 version = "0.1.1"
