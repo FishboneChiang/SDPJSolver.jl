@@ -1,4 +1,4 @@
-module SDPCSolver
+module SDPJSolver
 
 include("functions.jl")
 
