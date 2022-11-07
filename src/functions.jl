@@ -61,7 +61,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
                 v[i] += sum(A[l][i, :, :] .* Z[l])
             end
         end
-        dxdy = M \ vcat(-d-v, p)
+        dxdy = M \ vcat(-d - v, p)
         dx, dy = dxdy[1:m], dxdy[m+1:m+n]
         dX = P + [sum([A[l][i, :, :] * dx[i] for i in 1:m]) for l in 1:L]
         dY = X .\ (R - dX .* Y)
@@ -70,13 +70,13 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
 
     # Corrector
     begin
-        r = [sum((X[l]+dX[l]).*(Y[l]+dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
-        γ = [max(r[l]<1 ? r[l]^2 : r[l], β) for l in 1:L]
+        r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
+        γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
             γ = [min(γ[l], 1) for l in 1:L]
         end
         R = [γ[l] * μ[l] * I - X[l] * Y[l] - dX[l] * dY[l] for l in 1:L]
-        
+
         v = zeros(T, m)
         @threads for l in 1:L
             Z[l] = X[l] \ (P[l] * Y[l] - R[l])
@@ -86,25 +86,27 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
                 v[i] += sum(A[l][i, :, :] .* Z[l])
             end
         end
-        dxdy = M \ vcat(-d-v, p)
+        dxdy = M \ vcat(-d - v, p)
         dx, dy = dxdy[1:m], dxdy[m+1:m+n]
         dX = P + [sum([A[l][i, :, :] * dx[i] for i in 1:m]) for l in 1:L]
         dY = X .\ (R - dX .* Y)
         dY = (dY + transpose.(dY)) / 2
     end
-    
+
     p_res, d_res = max([max(abs.(P[l])...) for l in 1:L]..., abs.(p)...), max(abs.(d)...)
 
     return p_res, d_res, dx, dX, dy, dY
 end
 
-function sdp(c, A, C, B, b; 
-            β = 0.1, Ωp = 1, Ωd = 1,
-            ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, 
-            iterMax = 200, prec = 300)
+function sdp(c, A, C, B, b;
+    β=0.1, Ωp=1, Ωd=1,
+    ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
+    iterMax=200, prec=300)
 
     # Set arithmetic type and precision
-    if T == BigFloat setprecision(prec, base=10) end
+    if T == BigFloat
+        setprecision(prec, base=10)
+    end
     # c, A, C, B, b = T.(c), T.(A), T.(C), T.(B), T.(b)
 
     # Initialize variables
@@ -112,7 +114,7 @@ function sdp(c, A, C, B, b;
     x, y = zeros(T, m), zeros(T, n)
     X, Y, μ = Array{Matrix{T}}(undef, L), Array{Matrix{T}}(undef, L), Array{T}(undef, L)
     for l in 1:L
-        X[l], Y[l] = Matrix(Ωp*I, size(A[l])[2:3]), Matrix(Ωd*I, size(A[l])[2:3])
+        X[l], Y[l] = Matrix(Ωp * I, size(A[l])[2:3]), Matrix(Ωd * I, size(A[l])[2:3])
         μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1]
     end
 
@@ -126,7 +128,7 @@ function sdp(c, A, C, B, b;
     println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tstep\t\ttime")
     println("=====================================================================================================================")
     @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res
-    if p_res < ϵ_primal && d_res < ϵ_dual 
+    if p_res < ϵ_primal && d_res < ϵ_dual
         if mode == "opt" && 0 < dual_gap < ϵ_gap
             return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
         end
@@ -162,9 +164,9 @@ function sdp(c, A, C, B, b;
         dual_obj = sum(tr.(C .* Y)) + transpose(b) * y
         dual_gap = primal_obj - dual_obj
         iter += 1
-        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res t t2-t1
+        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res t t2 - t1
 
-        if p_res < ϵ_primal && d_res < ϵ_dual 
+        if p_res < ϵ_primal && d_res < ϵ_dual
             if mode == "opt" && 0 < dual_gap < ϵ_gap
                 return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
             end
@@ -185,10 +187,10 @@ function sdp(c, A, C, B, b;
 
 end
 
-function findFeasible(A, C, B, b; 
-                    β = 0.1, Ωp = 1, Ωd = 1, 
-                    ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, 
-                    iterMax = 200, prec = 300)
+function findFeasible(A, C, B, b;
+    β=0.1, Ωp=1, Ωd=1,
+    ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
+    iterMax=200, prec=300)
 
     # Initialize variables
     L, m, n = length(A), size(A[1])[1], length(b)
@@ -199,14 +201,14 @@ function findFeasible(A, C, B, b;
         k = size(A[l])[2]
         AA[l] = vcat(reshape(Matrix{T}(I, k, k), 1, k, k), A[l])
     end
-    cc = [i==1 ? 1 : 0 for i in 1:m+1]
+    cc = [i == 1 ? 1 : 0 for i in 1:m+1]
     BB = vcat(zeros(T, 1, n), B)
 
     setMode("feas")
 
-    prob = sdp(cc, AA, C, BB, b; 
-            β = β, Ωp = Ωp, Ωd = Ωd, 
-            ϵ_gap = ϵ_gap, ϵ_primal = ϵ_primal, ϵ_dual = ϵ_dual, iterMax = iterMax, prec = prec)
+    prob = sdp(cc, AA, C, BB, b;
+        β=β, Ωp=Ωp, Ωd=Ωd,
+        ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
 
     setMode("opt")
 
