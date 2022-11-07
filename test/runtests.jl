@@ -1,12 +1,12 @@
-using SDPCSolver
+using SDPJSolver
 using Test
 
-@testset "SDPCSolver.jl" begin
+@testset "SDPJSolver.jl" begin
 
     function test_float()
         @info "Testing Float64 arithmetic..."
         T = Float64
-        SDPCSolver.setArithmeticType(T)
+        SDPJSolver.setArithmeticType(T)
         A, C = zeros(T, 2, 2, 2), zeros(T, 2, 2)
         A[1, 1, 1] = 1
         A[2, 2, 2] = 1
@@ -17,7 +17,7 @@ using Test
         B = Matrix{T}(undef, 2, 0)
         b = Array{T}(undef, 0)
 
-        prob = SDPCSolver.sdp(c, A, C, B, b)
+        prob = SDPJSolver.sdp(c, A, C, B, b)
         println("\nStatus: ", prob["status"])
         println("Optimal value: ", prob["pObj"], "\n")
     end
@@ -25,7 +25,7 @@ using Test
     function test_bigfloat()
         @info "Testing BigFloat arithmetic..."
         T = BigFloat
-        SDPCSolver.setArithmeticType(T)
+        SDPJSolver.setArithmeticType(T)
         A, C = zeros(T, 2, 2, 2), zeros(T, 2, 2)
         A[1, 1, 1] = 1
         A[2, 2, 2] = 1
@@ -36,7 +36,7 @@ using Test
         B = Matrix{T}(undef, 2, 0)
         b = Array{T}(undef, 0)
 
-        prob = SDPCSolver.sdp(c, A, C, B, b; prec = 300)
+        prob = SDPJSolver.sdp(c, A, C, B, b; prec = 300)
         println("\nStatus: ", prob["status"])
         println("Optimal value: ", prob["pObj"], "\n")
     end
