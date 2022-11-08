@@ -52,7 +52,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     begin
         M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
         v = zeros(T, m)
-        Z = Array{Matrix{T}}(undef, m)
+        Z = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
             Z[l] = X[l] \ (P[l] * Y[l] - R[l])
         end
