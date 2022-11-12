@@ -35,14 +35,14 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
         S = [zeros(T, m, m) for l in 1:L]
         invX = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
-            invX[l] = X[l] \ I
+            @inbounds invX[l] = X[l] \ I
         end
         @threads for i in 1:m
             for l in 1:L
-                SS = Y[l] * A[l][i, :, :] * invX[l]
+                @inbounds SS = Y[l] * A[l][i, :, :] * invX[l]
                 for j in i:m
-                    S[l][i, j] = sum(SS .* A[l][j, :, :])
-                    S[l][j, i] = S[l][i, j]
+                    @inbounds S[l][i, j] = sum(SS .* A[l][j, :, :])
+                    @inbounds S[l][j, i] = S[l][i, j]
                 end
             end
         end
@@ -54,11 +54,11 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
         v = zeros(T, m)
         Z = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
-            Z[l] = X[l] \ (P[l] * Y[l] - R[l])
+            @inbounds Z[l] = invX[l] * (P[l] * Y[l] - R[l])
         end
         @threads for i in 1:m
             for l in 1:L
-                v[i] += sum(A[l][i, :, :] .* Z[l])
+                @inbounds v[i] += sum(A[l][i, :, :] .* Z[l])
             end
         end
         dxdy = M \ vcat(-d - v, p)
@@ -79,11 +79,11 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
 
         v = zeros(T, m)
         @threads for l in 1:L
-            Z[l] = X[l] \ (P[l] * Y[l] - R[l])
+            @inbounds Z[l] = X[l] \ (P[l] * Y[l] - R[l])
         end
         @threads for i in 1:m
             for l in 1:L
-                v[i] += sum(A[l][i, :, :] .* Z[l])
+                @inbounds v[i] += sum(A[l][i, :, :] .* Z[l])
             end
         end
         dxdy = M \ vcat(-d - v, p)

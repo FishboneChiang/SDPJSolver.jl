@@ -41,35 +41,35 @@ using Test
         println("Optimal value: ", prob["pObj"], "\n")
     end
 
-    # function random_sdp()
-    #     @info "Testing function findFeasible()"
-    #     T = Float64
-    #     SDPJSolver.setArithmeticType(T)
-    #     m, n = 50, 0
-    #     k = 25
-    #     A1 = rand(T, m, k, k)
-    #     A2 = rand(T, m, k, k)
-    #     A3 = rand(T, m, k, k)
-    #     C1 = rand(T, k, k)
-    #     C2 = rand(T, k, k)
-    #     C3 = rand(T, k, k)
-    #     C1, C2, C3 = (x -> (transpose(x) + x) / 2).([C1, C2, C3])
-    #     for i in 1:m
-    #         A1[i, :, :] = (A1[i, :, :] + transpose(A1[i, :, :])) / 2
-    #         A2[i, :, :] = (A2[i, :, :] + transpose(A2[i, :, :])) / 2
-    #         A3[i, :, :] = (A3[i, :, :] + transpose(A3[i, :, :])) / 2
-    #     end
-    #     A, C = [A1, A2, A3], [C1, C2, C3]
-    #     B = rand(T, m, n)
-    #     b = zeros(T, n)
-    #     c = rand(T, m)
+    function random_sdp()
+        @info "Testing function findFeasible()"
+        T = Float64
+        SDPJSolver.setArithmeticType(T)
+        m, n = 80, 0
+        k = 20
+        A1 = rand(T, m, k, k)
+        A2 = rand(T, m, k, k)
+        A3 = rand(T, m, k, k)
+        C1 = rand(T, k, k)
+        C2 = rand(T, k, k)
+        C3 = rand(T, k, k)
+        C1, C2, C3 = (x -> (transpose(x) + x) / 2).([C1, C2, C3])
+        for i in 1:m
+            A1[i, :, :] = (A1[i, :, :] + transpose(A1[i, :, :])) / 2
+            A2[i, :, :] = (A2[i, :, :] + transpose(A2[i, :, :])) / 2
+            A3[i, :, :] = (A3[i, :, :] + transpose(A3[i, :, :])) / 2
+        end
+        A, C = [A1, A2, A3], [C1, C2, C3]
+        B = rand(T, m, n)
+        b = zeros(T, n)
+        c = rand(T, m)
 
-    #     prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e4, Ωd = 1e4, β = 0.01, prec = 100, ϵ_dual = 1e-7, ϵ_primal = 1e-7, ϵ_gap = 1e-7)
-    #     println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
-    # end
+        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e4, Ωd = 1e4, β = 0.01, prec = 100, ϵ_dual = 1e-7, ϵ_primal = 1e-7, ϵ_gap = 1e-7)
+        println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
+    end
 
     test_float()
     test_bigfloat()
-    # random_sdp()
+    random_sdp()
 
 end
