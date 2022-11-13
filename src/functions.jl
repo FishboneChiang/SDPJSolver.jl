@@ -215,3 +215,124 @@ function findFeasible(A, C, B, b;
     return prob
 
 end
+
+function sdp(c, A, C, B, b, x0, X0, y0, Y0;
+    β=0.1, 
+    ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
+    iterMax=200, prec=300)
+
+    # Set arithmetic type and precision
+    if T == BigFloat
+        setprecision(prec, base=10)
+    end
+    # c, A, C, B, b = T.(c), T.(A), T.(C), T.(B), T.(b)
+
+    # Initialize variables
+    L, m, n = length(A), size(A[1])[1], length(b)
+    x, y = x0, y0
+    X, Y, μ = X0, Y0, Array{T}(undef, L)
+    for l in 1:L μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1] end
+
+    # Check positivity
+    if !(all(isposdef.(X)) && all(isposdef.(Y)))
+        @error "Initial point X or Y is not positive!"
+        return
+    end
+
+    iter = 0
+    primal_obj = transpose(c) * x
+    dual_obj = sum(tr.(C .* Y)) + transpose(b) * y
+    dual_gap = primal_obj - dual_obj
+    P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
+    p_res, d_res = max([max(abs.(P[l])...) for l in 1:L]..., abs.(p)...), max(abs.(d)...)
+
+    println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tstep\t\ttime")
+    println("=====================================================================================================================")
+    @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res
+    if p_res < ϵ_primal && d_res < ϵ_dual
+        if mode == "opt" && 0 < dual_gap < ϵ_gap
+            return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+        end
+        if mode == "feas"
+            if dual_obj <= primal_obj <= 0
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+            end
+            if primal_obj >= dual_obj >= 0
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Infeasible")
+            end
+        end
+    end
+
+    while iter < iterMax
+        t1 = time()
+        p_res, d_res, dx, dX, dy, dY = NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
+
+        # Line search
+        t = 1
+        while true
+            X_new, Y_new = X + t * dX, Y + t * dY
+            if !(all(isposdef.(X_new)) && all(isposdef.(Y_new)))
+                t *= 0.9
+                continue
+            end
+            x, y = x + t * dx, y + t * dy
+            X, Y = X_new, Y_new
+            break
+        end
+        t2 = time()
+
+        primal_obj = transpose(c) * x
+        dual_obj = sum(tr.(C .* Y)) + transpose(b) * y
+        dual_gap = primal_obj - dual_obj
+        iter += 1
+        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res t t2 - t1
+
+        if p_res < ϵ_primal && d_res < ϵ_dual
+            if mode == "opt" && 0 < dual_gap < ϵ_gap
+                return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+            end
+            if mode == "feas"
+                if dual_obj <= primal_obj < 0
+                    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Feasible")
+                end
+                if primal_obj >= dual_obj > 0
+                    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Infeasible")
+                end
+            end
+        end
+
+        μ = β * tr.(X .* Y) ./ [size(XX)[1] for XX in X]
+    end
+
+    return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Cannot reach optimality (feasibility) within $(iterMax) iterations.")
+
+end
+
+function findFeasible(A, C, B, b, x0, X0, y0, Y0;
+    β=0.1, 
+    ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
+    iterMax=200, prec=300)
+
+    # Initialize variables
+    L, m, n = length(A), size(A[1])[1], length(b)
+
+    # sdp parameters
+    AA = Array{Any}(undef, L)
+    for l in 1:L
+        k = size(A[l])[2]
+        AA[l] = vcat(reshape(Matrix{T}(I, k, k), 1, k, k), A[l])
+    end
+    cc = [i == 1 ? 1 : 0 for i in 1:m+1]
+    BB = vcat(zeros(T, 1, n), B)
+
+    setMode("feas")
+
+    prob = sdp(cc, AA, C, BB, b, x0, X0, y0, Y0;
+        β=β,
+        ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
+
+    setMode("opt")
+
+    return prob
+
+end
