@@ -15,6 +15,10 @@ function setMode(str)
     end
 end
 
+#=====================================================================
+    These functions are for the PRIMAL-DUAL interior-point method.
+=====================================================================#
+
 function getResidue(μ, x, X, y, Y, c, A, C, B, b)
     m, L = length(x), length(A)
     P = [sum([A[l][i, :, :] * x[i] for i in 1:m]) - X[l] - C[l] for l in 1:L]
@@ -217,7 +221,7 @@ function findFeasible(A, C, B, b;
 end
 
 function sdp(c, A, C, B, b, x0, X0, y0, Y0;
-    β=0.1, 
+    β=0.1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -231,7 +235,9 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
     L, m, n = length(A), size(A[1])[1], length(b)
     x, y = x0, y0
     X, Y, μ = X0, Y0, Array{T}(undef, L)
-    for l in 1:L μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1] end
+    for l in 1:L
+        μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1]
+    end
 
     # Check positivity
     if !(all(isposdef.(X)) && all(isposdef.(Y)))
@@ -309,7 +315,7 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
 end
 
 function findFeasible(A, C, B, b, x0, X0, y0, Y0;
-    β=0.1, 
+    β=0.1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -332,6 +338,150 @@ function findFeasible(A, C, B, b, x0, X0, y0, Y0;
         ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
 
     setMode("opt")
+
+    return prob
+
+end
+
+#================================(EXPERIMENTAL)================================
+    These functions are for the BARRIER interior-point method (with BFGS).
+==============================================================================#
+
+function f1(A, C, x)
+    L, m = length(A), size(A[1])[1]
+    X = Array{Matrix{T}}(undef, L)
+    @threads for l in 1:L
+        X[l] = -C[l] + sum([x[i] * A[l][i, :, :] for i in 1:m])
+    end
+    return X
+end
+
+function df(c, μ, A, C, x)
+    L, m = length(A), size(A[1])[1]
+    invX = f1(A, C, x)
+    @threads for l in 1:L
+        invX[l] = invX[l] \ I
+    end
+    g = T.(c)
+    @threads for i in 1:m
+        for l in 1:L
+            g[i] -= μ * sum(A[l][i, :, :] .* invX[l])
+        end
+    end
+    return g
+end
+
+function f(c, μ, A, C, x)
+    f = c' * x
+    X = f1(A, C, x)
+    f -= μ * sum(log.(det.(X)))
+end
+
+function sdpBFGS(c, A, C, x0;
+    μ=1, β=0.1,
+    ϵ_gap=1e-7, ϵ=1e-10, iterMax=100, prec=300)
+
+    # Set arithmetic type and precision
+    if T == BigFloat
+        setprecision(prec, base=10)
+    end
+    # c, A, C, x0 = T.(c), T.(A), T.(C), T.(x0)
+
+    # Initialize variables
+    L, m = length(A), size(A[1])[1]
+    x = x0
+    X = f1(A, C, x)
+    H = Matrix{T}(I, m, m)
+
+    # Check feasibility
+    if !(all(isposdef.(X)))
+        @error "Initial point not feasible!"
+        return
+    end
+
+    primal_obj = c' * x
+    X = f1(A, C, x)
+    dual_obj = μ * sum([sum(C[l] .* (X[l] \ I)) for l in 1:L])
+    dual_gap = primal_obj - dual_obj
+    println("μ\t\tp-Obj\t\td-Obj\t\tgap\t\tres\t\tsteps\ttime")
+    println("===================================================================================================")
+
+    while true
+
+        iter = 0
+
+        t1 = time()
+
+        while true
+            dx = -H * df(c, μ, A, C, x)
+            # Line search
+            t = 1
+            while !(all(isposdef.(f1(A, C, x + t * dx))))
+                t *= 0.9
+                if t < 1e-5
+                    @error "Step size too small!"
+                    return
+                end
+            end
+            dx = t * dx
+            x_new = x + dx
+            y = df(c, μ, A, C, x_new) - df(c, μ, A, C, x)
+            x = x_new
+            M = I - (dx * y') / (y' * dx)
+            H = M * H * M' + (dx * dx') / (y' * dx)
+
+            if norm(df(c, μ, A, C, x)) < ϵ
+                t2 = time()
+                primal_obj = c' * x
+                X = f1(A, C, x)
+                dual_obj = μ * sum([sum(C[l] .* (X[l] \ I)) for l in 1:L])
+                dual_gap = primal_obj - dual_obj
+                res = max(abs.(df(c, μ, A, C, x))...)
+                @printf "%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%d\t%.5E\n" μ primal_obj dual_obj dual_gap res iter t2 - t1
+                break
+            end
+
+            if iter >= iterMax
+                println("Cannot reach optimality within $(iterMax) iterations!")
+                return
+            end
+
+            iter += 1
+        end
+
+        if 0 < dual_gap < ϵ_gap
+            break
+        end
+
+        μ *= β
+
+    end
+
+    return Dict("x" => x, "X" => X, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "Optimal")
+
+end
+
+function findFeasibleBFGS(c, A, C;
+    μ=1, β=0.1,
+    ϵ_gap=1e-10, ϵ=1e-5, iterMax=100, prec=300)
+
+    # Initialize variables
+    L, m = length(A), size(A[1])[1]
+
+    # sdp parameters
+    AA = Array{Any}(undef, L)
+    for l in 1:L
+        k = size(A[l])[2]
+        AA[l] = vcat(reshape(Matrix{T}(I, k, k), 1, k, k), A[l])
+    end
+    cc = [i == 1 ? 1 : 0 for i in 1:m+1]
+    t0 = 1
+    while !(all(isposdef.([t0 * I - C[l] for l in 1:L]))) t0 *= 2 end
+    println("Initial point found: t0 = $(t0)")
+    x0 = Array([t0, zeros(T, m)...])
+
+    prob = sdpBFGS(cc, AA, C, x0;
+       μ = μ, β=β, ϵ_gap=ϵ_gap, ϵ = ϵ, iterMax=iterMax, prec=prec)
 
     return prob
 

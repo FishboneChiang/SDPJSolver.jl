@@ -68,8 +68,25 @@ using Test
         println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
     end
 
+    function test_QuasiNewton()
+        @info "Testing quasi-Newton method..."
+        T = BigFloat
+        SDPJSolver.setArithmeticType(T)
+        A, C = zeros(T, 2, 2, 2), zeros(T, 2, 2)
+        A[1, 1, 1] = 1
+        A[2, 2, 2] = 1
+        C[1, 2], C[2, 1] = 1, 1
+        A = [A]
+        C = [C]
+        c = T.([2, 3])
+        x0 = [2, 2]
+    
+        prob = SDPJSolver.sdpBFGS(c, A, C, x0; β = 0.1)
+    end
+
     test_float()
     test_bigfloat()
     random_sdp()
+    test_QuasiNewton()
 
 end
