@@ -118,8 +118,8 @@ The function `sdp()` returns a dictionary with the following keys:
 - "X": value of the variable `X`
 - "y": value of the variable `y`
 - "Y": value of the variable `Y`
-- "p-Obj": value of the primal objective function
-- "d-Obj": value of the dual objective fucntion
+- "pObj": value of the primal objective function
+- "dObj": value of the dual objective fucntion
 - "status": reports the status of optimization. Can be either 
     * "Optimal"
     * "Feasible"
