@@ -131,8 +131,8 @@ function sdp(c, A, C, B, b;
     P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
     p_res, d_res = max([max(abs.(P[l])...) for l in 1:L]..., abs.(p)...), max(abs.(d)...)
 
-    println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tstep\t\ttime")
-    println("=====================================================================================================================")
+    println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tp-step\t\td-step\t\ttime")
+    println("===================================================================================================================================")
     @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res
     if p_res < ϵ_primal && d_res < ϵ_dual
         if mode == "opt" && 0 < dual_gap < ϵ_gap
@@ -153,14 +153,18 @@ function sdp(c, A, C, B, b;
         p_res, d_res, dx, dX, dy, dY = NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
 
         # Line search
-        t = 1
+        tX, tY = 1, 1
         while true
-            X_new, Y_new = X + t * dX, Y + t * dY
-            if !(all(isposdef.(X_new)) && all(isposdef.(Y_new)))
-                t *= 0.9
+            X_new, Y_new = X + tX * dX, Y + tY * dY
+            if !(all(isposdef.(X_new)))
+                tX *= 0.9
                 continue
             end
-            x, y = x + t * dx, y + t * dy
+            if !(all(isposdef.(Y_new)))
+                tY *= 0.9
+                continue
+            end
+            x, y = x + tX * dx, y + tY * dy
             X, Y = X_new, Y_new
             break
         end
@@ -170,7 +174,7 @@ function sdp(c, A, C, B, b;
         dual_obj = sum(tr.(C .* Y)) + transpose(b) * y
         dual_gap = primal_obj - dual_obj
         iter += 1
-        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res t t2 - t1
+        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res tX tY t2 - t1
 
         if p_res < ϵ_primal && d_res < ϵ_dual
             if mode == "opt" && 0 < dual_gap < ϵ_gap
@@ -254,8 +258,8 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
     P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
     p_res, d_res = max([max(abs.(P[l])...) for l in 1:L]..., abs.(p)...), max(abs.(d)...)
 
-    println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tstep\t\ttime")
-    println("=====================================================================================================================")
+    println("iter\tp-Obj\t\td-Obj\t\tgap\t\tp-Res\t\td-Res\t\tp-step\t\td-step\t\ttime")
+    println("===================================================================================================================================")
     @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res
     if p_res < ϵ_primal && d_res < ϵ_dual
         if mode == "opt" && 0 < dual_gap < ϵ_gap
@@ -276,14 +280,18 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
         p_res, d_res, dx, dX, dy, dY = NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
 
         # Line search
-        t = 1
+        tX, tY = 1, 1
         while true
-            X_new, Y_new = X + t * dX, Y + t * dY
-            if !(all(isposdef.(X_new)) && all(isposdef.(Y_new)))
-                t *= 0.9
+            X_new, Y_new = X + tX * dX, Y + tY * dY
+            if !(all(isposdef.(X_new)))
+                tX *= 0.9
                 continue
             end
-            x, y = x + t * dx, y + t * dy
+            if !(all(isposdef.(Y_new)))
+                tY *= 0.9
+                continue
+            end
+            x, y = x + tX * dx, y + tY * dy
             X, Y = X_new, Y_new
             break
         end
@@ -293,7 +301,7 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
         dual_obj = sum(tr.(C .* Y)) + transpose(b) * y
         dual_gap = primal_obj - dual_obj
         iter += 1
-        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res t t2 - t1
+        @printf "%d\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\n" iter primal_obj dual_obj dual_gap p_res d_res tX tY t2 - t1
 
         if p_res < ϵ_primal && d_res < ϵ_dual
             if mode == "opt" && 0 < dual_gap < ϵ_gap
