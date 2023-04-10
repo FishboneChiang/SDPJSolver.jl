@@ -158,12 +158,10 @@ function sdp(c, A, C, B, b;
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
                 tX *= 0.9
-                tY *= 0.9
                 continue
             end
             if !(all(isposdef.(Y_new)))
                 tY *= 0.9
-                tX *= 0.9
                 continue
             end
             x, y = x + tX * dx, y + tY * dy
