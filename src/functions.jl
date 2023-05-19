@@ -161,12 +161,14 @@ function sdp(c, A, C, B, b;
                 for l in 1:L
                     X[l] = Matrix(Ωp * I, size(A[l])[2:3])
                 end
+                tX = 1
             end
             if tY < 1e-10 
                 Y = Array{Matrix{T}}(undef, L) 
                 for l in 1:L
                     Y[l] = Matrix(Ωd * I, size(A[l])[2:3])
                 end
+                tY = 1
             end
             # 
             X_new, Y_new = X + tX * dX, Y + tY * dY
