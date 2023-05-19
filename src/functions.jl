@@ -155,6 +155,10 @@ function sdp(c, A, C, B, b;
         # Line search
         tX, tY = 1, 1
         while true
+            # restart
+            if tX < 1e-10 X *= 10 end
+            if tY < 1e-10 Y *= 10 end
+            # 
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
                 tX *= 0.9
