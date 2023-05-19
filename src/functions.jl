@@ -157,6 +157,7 @@ function sdp(c, A, C, B, b;
         while true
             # restart if the step sizes are too small
             if tX < 1e-10 
+                println("Primal step size too small! Restart!")
                 X = Array{Matrix{T}}(undef, L) 
                 for l in 1:L
                     X[l] = Matrix(Ωp * I, size(A[l])[2:3])
@@ -164,6 +165,7 @@ function sdp(c, A, C, B, b;
                 tX = 1
             end
             if tY < 1e-10 
+                println("Dual step size too small! Restart!")
                 Y = Array{Matrix{T}}(undef, L) 
                 for l in 1:L
                     Y[l] = Matrix(Ωd * I, size(A[l])[2:3])
