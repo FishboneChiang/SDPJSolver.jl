@@ -155,9 +155,19 @@ function sdp(c, A, C, B, b;
         # Line search
         tX, tY = 1, 1
         while true
-            # restart
-            if tX < 1e-10 X = Array{Matrix{T}}(undef, L) end
-            if tY < 1e-10 Y = Array{Matrix{T}}(undef, L) end
+            # restart if the step sizes are too small
+            if tX < 1e-10 
+                X = Array{Matrix{T}}(undef, L) 
+                for l in 1:L
+                    X[l] = Matrix(Ωp * I, size(A[l])[2:3])
+                end
+            end
+            if tY < 1e-10 
+                Y = Array{Matrix{T}}(undef, L) 
+                for l in 1:L
+                    Y[l] = Matrix(Ωd * I, size(A[l])[2:3])
+                end
+            end
             # 
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
