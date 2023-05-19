@@ -159,12 +159,12 @@ function sdp(c, A, C, B, b;
         tX, tY = 1, 1
         while true
             # restart if the step sizes are too small
-            if tX < minstep_primal
+            if tX < minStep_primal
                 println("Primal step size too small! Restart!")
                 Ωp *= 1e5
                 @goto restart
             end
-            if tY < minstep_dual
+            if tY < minStep_dual
                 println("Dual step size too small! Restart!")
                 Ωd *= 1e5
                 @goto restart
