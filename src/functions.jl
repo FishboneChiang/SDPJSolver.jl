@@ -107,7 +107,8 @@ end
 function sdp(c, A, C, B, b;
     β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
-    iterMax=200, prec=300)
+    iterMax=200, prec=300, 
+    minStep_primal = 1e-10, minStep_dual = 1e-10)
 
     # Set arithmetic type and precision
     if T == BigFloat
@@ -158,7 +159,7 @@ function sdp(c, A, C, B, b;
         tX, tY = 1, 1
         while true
             # restart if the step sizes are too small
-            if tX < 1e-10 
+            if tX < p
                 println("Primal step size too small! Restart!")
                 Ωp *= 1e5
                 @goto restart
