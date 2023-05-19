@@ -156,8 +156,8 @@ function sdp(c, A, C, B, b;
         tX, tY = 1, 1
         while true
             # restart
-            if tX < 1e-10 X *= 10 end
-            if tY < 1e-10 Y *= 10 end
+            if tX < 1e-10 X = Array{Matrix{T}}(undef, L) end
+            if tY < 1e-10 Y = Array{Matrix{T}}(undef, L) end
             # 
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
