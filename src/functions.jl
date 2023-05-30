@@ -108,7 +108,7 @@ function sdp(c, A, C, B, b;
     β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300, 
-    minStep = 1e-15, restart = true)
+    restart = true, minStep = 1e-15, maxOmega = 1e50)
 
     # Set arithmetic type and precision
     if T == BigFloat
@@ -117,6 +117,9 @@ function sdp(c, A, C, B, b;
     # c, A, C, B, b = T.(c), T.(A), T.(C), T.(B), T.(b)
 
     @label start
+    if Ωp > maxOmega || Ωd > maxOmega
+        return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "maxOmega exceeded!")
+    end
 
     # Initialize variables
     L, m, n = length(A), size(A[1])[1], length(b)
