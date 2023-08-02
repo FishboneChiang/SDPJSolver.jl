@@ -1,7 +1,20 @@
-using LinearAlgebra, Base.Threads, Printf
+using LinearAlgebra, Base.Threads, Printf, SparseArrays
 
 T::Type = BigFloat
 mode::String = "opt"
+sparseMode::Bool = false
+
+function setSparseMode(arg)
+    if arg == true
+        println("Sparse mode ON")
+        global sparseMode = true
+    elseif arg == false
+        println("Sparse mode OFF")
+        global sparseMode = false
+    else
+        println("sparseMode should be true or false!")
+    end
+end
 
 function setArithmeticType(type)
     global T = type
@@ -19,6 +32,10 @@ end
     These functions are for the PRIMAL-DUAL interior-point method.
 =====================================================================#
 
+#=============
+    Dense 
+=============#
+
 function getResidue(μ, x, X, y, Y, c, A, C, B, b)
     m, L = length(x), length(A)
     P = [sum([A[l][i, :, :] * x[i] for i in 1:m]) - X[l] - C[l] for l in 1:L]
@@ -32,10 +49,10 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     m, L, n = length(x), length(A), length(y)
 
     # calculate residue
-    P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
+    @time P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
 
     # calculate Schur complement
-    begin
+    @time begin
         S = [zeros(T, m, m) for l in 1:L]
         invX = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
@@ -53,7 +70,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     end
 
     # Predictor
-    begin
+    @time begin
         M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
         v = zeros(T, m)
         Z = Array{Matrix{T}}(undef, L)
@@ -73,7 +90,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     end
 
     # Corrector
-    begin
+    @time begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
@@ -93,6 +110,90 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
         dxdy = M \ vcat(-d - v, p)
         dx, dy = dxdy[1:m], dxdy[m+1:m+n]
         dX = P + [sum([A[l][i, :, :] * dx[i] for i in 1:m]) for l in 1:L]
+        dY = X .\ (R - dX .* Y)
+        dY = (dY + transpose.(dY)) / 2
+    end
+
+    p_res, d_res = max([max(abs.(P[l])...) for l in 1:L]..., abs.(p)...), max(abs.(d)...)
+
+    GC.gc()
+
+    return p_res, d_res, dx, dX, dy, dY
+end
+
+#=============
+    Sparse 
+=============#
+
+function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
+    m, L, n = length(x), length(AA), length(y)
+
+    # calculate residue
+    @time P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
+
+    # calculate Schur complement
+    @time begin
+        S = [zeros(T, m, m) for l in 1:L]
+        invX = Array{Matrix{T}}(undef, L)
+        @threads for l in 1:L
+            @inbounds invX[l] = X[l] \ I
+        end
+        for l in 1:L
+            SS1, SS2 = Array{Matrix{T}}(undef, m), Array{Matrix{T}}(undef, m)
+            @threads for i in 1:m
+                SS1[i] = Y[l] * AA[l][i]
+                SS2[i] = AA[l][i] * invX[l]
+            end
+            @threads for i in 1:m
+                for j in i:m
+                    S[l][i, j] = sum(SS1[i] .* SS2[j])
+                    S[l][j, i] = S[l][i, j]
+                end
+            end
+        end
+    end
+
+    # Predictor
+    @time begin
+        M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
+        v = zeros(T, m)
+        Z = Array{Matrix{T}}(undef, L)
+        @threads for l in 1:L
+            @inbounds Z[l] = invX[l] * (P[l] * Y[l] - R[l])
+        end
+        @threads for i in 1:m
+            for l in 1:L
+                @inbounds v[i] += sum(AA[l][i] .* Z[l])
+            end
+        end
+        dxdy = M \ vcat(-d - v, p)
+        dx, dy = dxdy[1:m], dxdy[m+1:m+n]
+        dX = P + [sum([A[l][i,:,:] * dx[i] for i in 1:m]) for l in 1:L]
+        dY = X .\ (R - dX .* Y)
+        dY = (dY + transpose.(dY)) / 2
+    end
+
+    # Corrector
+    @time begin
+        r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
+        γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
+        if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
+            γ = [min(γ[l], 1) for l in 1:L]
+        end
+        R = [γ[l] * μ[l] * I - X[l] * Y[l] - dX[l] * dY[l] for l in 1:L]
+
+        v = zeros(T, m)
+        @threads for l in 1:L
+            @inbounds Z[l] = X[l] \ (P[l] * Y[l] - R[l])
+        end
+        @threads for i in 1:m
+            for l in 1:L
+                @inbounds v[i] += sum(AA[l][i] .* Z[l])
+            end
+        end
+        dxdy = M \ vcat(-d - v, p)
+        dx, dy = dxdy[1:m], dxdy[m+1:m+n]
+        dX = P + [sum([A[l][i,:,:] * dx[i] for i in 1:m]) for l in 1:L]
         dY = X .\ (R - dX .* Y)
         dY = (dY + transpose.(dY)) / 2
     end
@@ -154,9 +255,20 @@ function sdp(c, A, C, B, b;
         end
     end
 
+    AA = []
+    if sparseMode
+        for l in 1:L
+            push!(AA, [sparse(A[l][i,:,:]) for i in 1:m])
+        end
+    end
+
     while iter < iterMax
         t1 = time()
-        p_res, d_res, dx, dX, dy, dY = NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
+        if sparseMode
+            p_res, d_res, dx, dX, dy, dY = NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
+        else
+            p_res, d_res, dx, dX, dy, dY = NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
+        end
 
         # Line search
         tX, tY = 1, 1
