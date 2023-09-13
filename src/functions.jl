@@ -168,7 +168,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
         end
         dxdy = M \ vcat(-d - v, p)
         dx, dy = dxdy[1:m], dxdy[m+1:m+n]
-        dX = P + [sum([A[l][i,:,:] * dx[i] for i in 1:m]) for l in 1:L]
+        dX = P + [sum([A[l][i, :, :] * dx[i] for i in 1:m]) for l in 1:L]
         dY = X .\ (R - dX .* Y)
         dY = (dY + transpose.(dY)) / 2
     end
@@ -193,7 +193,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
         end
         dxdy = M \ vcat(-d - v, p)
         dx, dy = dxdy[1:m], dxdy[m+1:m+n]
-        dX = P + [sum([A[l][i,:,:] * dx[i] for i in 1:m]) for l in 1:L]
+        dX = P + [sum([A[l][i, :, :] * dx[i] for i in 1:m]) for l in 1:L]
         dY = X .\ (R - dX .* Y)
         dY = (dY + transpose.(dY)) / 2
     end
@@ -208,8 +208,8 @@ end
 function sdp(c, A, C, B, b;
     β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
-    iterMax=200, prec=300, 
-    restart = true, minStep = 1e-15, maxOmega = 1e50)
+    iterMax=200, prec=300,
+    restart=true, minStep=1e-15, maxOmega=1e50)
 
     # Set arithmetic type and precision
     if T == BigFloat
@@ -258,7 +258,7 @@ function sdp(c, A, C, B, b;
     AA = []
     if sparseMode
         for l in 1:L
-            push!(AA, [sparse(A[l][i,:,:]) for i in 1:m])
+            push!(AA, [sparse(A[l][i, :, :]) for i in 1:m])
         end
     end
 
@@ -353,7 +353,7 @@ function findFeasible(A, C, B, b;
 end
 
 function sdp(c, A, C, B, b, x0, X0, y0, Y0;
-    β=0.1,
+    β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -451,7 +451,7 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
 end
 
 function findFeasible(A, C, B, b, x0, X0, y0, Y0;
-    β=0.1,
+    β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -470,7 +470,7 @@ function findFeasible(A, C, B, b, x0, X0, y0, Y0;
     setMode("feas")
 
     prob = sdp(cc, AA, C, BB, b, x0, X0, y0, Y0;
-        β=β,
+        β=β, Ωp=Ωp, Ωd=Ωd,
         ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
 
     setMode("opt")
@@ -612,12 +612,14 @@ function findFeasibleBFGS(c, A, C;
     end
     cc = [i == 1 ? 1 : 0 for i in 1:m+1]
     t0 = 1
-    while !(all(isposdef.([t0 * I - C[l] for l in 1:L]))) t0 *= 2 end
+    while !(all(isposdef.([t0 * I - C[l] for l in 1:L])))
+        t0 *= 2
+    end
     println("Initial point found: t0 = $(t0)")
     x0 = Array([t0, zeros(T, m)...])
 
     prob = sdpBFGS(cc, AA, C, x0;
-       μ = μ, β=β, ϵ_gap=ϵ_gap, ϵ = ϵ, iterMax=iterMax, prec=prec)
+        μ=μ, β=β, ϵ_gap=ϵ_gap, ϵ=ϵ, iterMax=iterMax, prec=prec)
 
     return prob
 
