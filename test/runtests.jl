@@ -36,17 +36,17 @@ using Test
         B = Matrix{T}(undef, 2, 0)
         b = Array{T}(undef, 0)
 
-        prob = SDPJSolver.sdp(c, A, C, B, b; prec=300)
+        prob = SDPJSolver.sdp(c, A, C, B, b)
         println("\nStatus: ", prob["status"])
         println("Optimal value: ", prob["pObj"], "\n")
     end
 
     function random_sdp()
         @info "Testing function findFeasible()"
-        T = Float64
+        T = BigFloat
         SDPJSolver.setArithmeticType(T)
-        m, n = 80, 0
-        k = 20
+        m, n = 40, 0
+        k = 10
         A1 = rand(T, m, k, k)
         A2 = rand(T, m, k, k)
         A3 = rand(T, m, k, k)
@@ -64,7 +64,7 @@ using Test
         b = zeros(T, n)
         c = rand(T, m)
 
-        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e4, Ωd = 1e4, β = 0.01, prec = 100, ϵ_dual = 1e-7, ϵ_primal = 1e-7, ϵ_gap = 1e-7)
+        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e4, Ωd = 1e4, β = 0.01, prec = 100, ϵ_dual = 1e-50, ϵ_primal = 1e-50, ϵ_gap = 1e-10)
         println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
     end
 
