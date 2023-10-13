@@ -275,9 +275,9 @@ function sdp(c, A, C, B, b;
         tX, tY = 1, 1
         while true
             # restart if the step sizes are too small
-            if restart && (tX < minStep || tY < minStep)
+            if restart && (tX < minStep && tY < minStep)
                 println("Step size too small! Rescale!")
-                X, Y = sqrt(1/β) * X, sqrt(1/β) * Y
+                X, Y = 10 * X, 10 * Y
                 # for l in 1:L
                 #     μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1]
                 # end
