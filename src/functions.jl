@@ -335,7 +335,7 @@ end
 function findFeasible(A, C, B, b;
     β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
-    iterMax=200, prec=300)
+    iterMax=200, prec=300, restart = true, minStep = 1e-10)
 
     # Initialize variables
     L, m, n = length(A), size(A[1])[1], length(b)
@@ -353,7 +353,7 @@ function findFeasible(A, C, B, b;
 
     prob = sdp(cc, AA, C, BB, b;
         β=β, Ωp=Ωp, Ωd=Ωd,
-        ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
+        ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec, restart = restart, minStep = minStep)
 
     setMode("opt")
 
