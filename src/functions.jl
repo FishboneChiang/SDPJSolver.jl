@@ -206,7 +206,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
 end
 
 function sdp(c, A, C, B, b;
-    β=0.1, Ωp=1, Ωd=1,
+    β=0.1, γ = 0.9, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300,
     restart=true, minStep=1e-10, maxOmega=1e50, OmegaStep=1e5)
@@ -289,11 +289,11 @@ function sdp(c, A, C, B, b;
             # 
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
-                tX *= 0.9
+                tX *= γ
                 continue
             end
             if !(all(isposdef.(Y_new)))
-                tY *= 0.9
+                tY *= γ
                 continue
             end
             x, y = x + tX * dx, y + tY * dy
@@ -359,7 +359,7 @@ function findFeasible(A, C, B, b;
 end
 
 function sdp(c, A, C, B, b, x0, X0, y0, Y0;
-    β=0.1, 
+    β=0.1, γ = 0.9,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -416,11 +416,11 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
         while true
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
-                tX *= 0.9
+                tX *= γ
                 continue
             end
             if !(all(isposdef.(Y_new)))
-                tY *= 0.9
+                tY *= γ
                 continue
             end
             x, y = x + tX * dx, y + tY * dy
