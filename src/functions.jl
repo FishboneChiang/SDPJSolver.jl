@@ -330,7 +330,7 @@ function sdp(c, A, C, B, b;
 end
 
 function findFeasible(A, C, B, b;
-    β=0.1, Ωp=1, Ωd=1,
+    β=0.1, Ωp=1, Ωd=1, γ=0.9, 
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300, restart = true, minStep = 1e-10)
 
@@ -349,7 +349,7 @@ function findFeasible(A, C, B, b;
     setMode("feas")
 
     prob = sdp(cc, AA, C, BB, b;
-        β=β, Ωp=Ωp, Ωd=Ωd,
+        β=β, Ωp=Ωp, Ωd=Ωd, γ=γ, 
         ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec, restart = restart, minStep = minStep)
 
     setMode("opt")
@@ -457,7 +457,7 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
 end
 
 function findFeasible(A, C, B, b, x0, X0, y0, Y0;
-    β=0.1, 
+    β=0.1, γ=0.9, 
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -476,7 +476,7 @@ function findFeasible(A, C, B, b, x0, X0, y0, Y0;
     setMode("feas")
 
     prob = sdp(cc, AA, C, BB, b, x0, X0, y0, Y0;
-        β=β, 
+        β=β, γ=γ, 
         ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
 
     setMode("opt")
