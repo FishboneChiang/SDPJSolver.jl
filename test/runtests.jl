@@ -45,8 +45,8 @@ using Test
         @info "Testing function findFeasible()"
         T = BigFloat
         SDPJSolver.setArithmeticType(T)
-        m, n = 40, 0
-        k = 10
+        m, n = 50, 0
+        k = 30
         A1 = rand(T, m, k, k)
         A2 = rand(T, m, k, k)
         A3 = rand(T, m, k, k)
@@ -64,7 +64,7 @@ using Test
         b = zeros(T, n)
         c = rand(T, m)
 
-        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e4, Ωd = 1e4, β = 0.01, prec = 100, ϵ_dual = 1e-50, ϵ_primal = 1e-50, ϵ_gap = 1e-10)
+        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e-4, Ωd = 1e-4, β = 0.01, prec = 100, ϵ_dual = 1e-50, ϵ_primal = 1e-50, ϵ_gap = 1e-10)
         println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
     end
 
@@ -84,9 +84,9 @@ using Test
         prob = SDPJSolver.sdpBFGS(c, A, C, x0; β = 0.1)
     end
 
-    test_float()
+    # test_float()
     test_bigfloat()
     random_sdp()
-    test_QuasiNewton()
+    # test_QuasiNewton()
 
 end

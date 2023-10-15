@@ -93,9 +93,9 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
-        if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
-            γ = [min(γ[l], 1) for l in 1:L]
-        end
+        # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
+            # γ = [min(γ[l], 1) for l in 1:L]
+        # end
         R = [γ[l] * μ[l] * I - X[l] * Y[l] - dX[l] * dY[l] for l in 1:L]
 
         v = zeros(T, m)
@@ -177,9 +177,9 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
-        if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
-            γ = [min(γ[l], 1) for l in 1:L]
-        end
+        # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
+        #     γ = [min(γ[l], 1) for l in 1:L]
+        # end
         R = [γ[l] * μ[l] * I - X[l] * Y[l] - dX[l] * dY[l] for l in 1:L]
 
         v = zeros(T, m)
@@ -209,7 +209,7 @@ function sdp(c, A, C, B, b;
     β=0.1, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300,
-    restart=true, minStep=1e-10)
+    restart=true, minStep=1e-10, maxOmega=1e50, OmegaStep=1e5)
 
     # Set arithmetic type and precision
     if T == BigFloat
@@ -217,10 +217,10 @@ function sdp(c, A, C, B, b;
     end
     # c, A, C, B, b = T.(c), T.(A), T.(C), T.(B), T.(b)
 
-    # @label start
-    # if Ωp > maxOmega || Ωd > maxOmega
-    #     return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "maxOmega exceeded!")
-    # end
+    @label start
+    if Ωp > maxOmega || Ωd > maxOmega
+        return Dict("x" => x, "X" => X, "y" => y, "Y" => Y, "pObj" => primal_obj, "dObj" => dual_obj, "status" => "maxOmega exceeded!")
+    end
 
     # Initialize variables
     L, m, n = length(A), size(A[1])[1], length(b)
@@ -263,7 +263,7 @@ function sdp(c, A, C, B, b;
     end
 
     while iter < iterMax
-        @label start
+        # @label start
         t1 = time()
         if sparseMode
             p_res, d_res, dx, dX, dy, dY = NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
@@ -275,20 +275,17 @@ function sdp(c, A, C, B, b;
         tX, tY = 1, 1
         while true
             # restart if the step sizes are too small
-            if restart && (tX < minStep && tY < minStep)
-                println("Step size too small! Rescale!")
-                X, Y = 10 * X, 10 * Y
-                # for l in 1:L
-                #     μ[l] = sum(X[l] .* Y[l]) / size(X[l])[1]
-                # end
-                @goto start
-            end
-            # if restart && tX < minStep && tY < minStep
-            #     println("Step size too small! Restart!")
-            #     Ωp *= 1e5
-            #     Ωd *= 1e5
+            # if restart && (tX < minStep && tY < minStep)
+            #     println("Step size too small! Rescale!")
+            #     X, Y = 10 * X, 10 * Y
             #     @goto start
             # end
+            if restart && (tX < minStep || tY < minStep)
+                println("Step size too small! Restart!")
+                Ωp *= OmegaStep
+                Ωd *= OmegaStep
+                @goto start
+            end
             # 
             X_new, Y_new = X + tX * dX, Y + tY * dY
             if !(all(isposdef.(X_new)))
