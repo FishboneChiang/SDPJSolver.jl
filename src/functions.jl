@@ -94,7 +94,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
-            # γ = [min(γ[l], 1) for l in 1:L]
+        # γ = [min(γ[l], 1) for l in 1:L]
         # end
         R = [γ[l] * μ[l] * I - X[l] * Y[l] - dX[l] * dY[l] for l in 1:L]
 
@@ -206,7 +206,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
 end
 
 function sdp(c, A, C, B, b;
-    β=0.1, γ = 0.9, Ωp=1, Ωd=1,
+    β=0.1, γ=0.9, Ωp=1, Ωd=1,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300,
     restart=true, minStep=1e-10, maxOmega=1e50, OmegaStep=1e5)
@@ -330,9 +330,9 @@ function sdp(c, A, C, B, b;
 end
 
 function findFeasible(A, C, B, b;
-    β=0.1, Ωp=1, Ωd=1, γ=0.9, 
+    β=0.1, Ωp=1, Ωd=1, γ=0.9,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
-    iterMax=200, prec=300, restart = true, minStep = 1e-10)
+    iterMax=200, prec=300, restart=true, minStep=1e-10)
 
     # Initialize variables
     L, m, n = length(A), size(A[1])[1], length(b)
@@ -349,8 +349,8 @@ function findFeasible(A, C, B, b;
     setMode("feas")
 
     prob = sdp(cc, AA, C, BB, b;
-        β=β, Ωp=Ωp, Ωd=Ωd, γ=γ, 
-        ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec, restart = restart, minStep = minStep)
+        β=β, Ωp=Ωp, Ωd=Ωd, γ=γ,
+        ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec, restart=restart, minStep=minStep)
 
     setMode("opt")
 
@@ -359,7 +359,7 @@ function findFeasible(A, C, B, b;
 end
 
 function sdp(c, A, C, B, b, x0, X0, y0, Y0;
-    β=0.1, γ = 0.9,
+    β=0.1, γ=0.9,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -457,7 +457,7 @@ function sdp(c, A, C, B, b, x0, X0, y0, Y0;
 end
 
 function findFeasible(A, C, B, b, x0, X0, y0, Y0;
-    β=0.1, γ=0.9, 
+    β=0.1, γ=0.9,
     ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
     iterMax=200, prec=300)
 
@@ -476,7 +476,7 @@ function findFeasible(A, C, B, b, x0, X0, y0, Y0;
     setMode("feas")
 
     prob = sdp(cc, AA, C, BB, b, x0, X0, y0, Y0;
-        β=β, γ=γ, 
+        β=β, γ=γ,
         ϵ_gap=ϵ_gap, ϵ_primal=ϵ_primal, ϵ_dual=ϵ_dual, iterMax=iterMax, prec=prec)
 
     setMode("opt")
