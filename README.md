@@ -4,12 +4,21 @@ SDPJ is a native Julia [semidefinite program](https://en.wikipedia.org/wiki/Semi
 - SDPJ is largely inspired by [SDPA](https://sdpa.sourceforge.net/) and [SDPB](https://github.com/davidsd/sdpb), with slightly different parallelization architecture.
 - The solver is still in a development stage, which is far from fully optimized and might contain bugs. Corrections and suggestions are welcome and will get serious attention : )
 
+## Installation
+In the Julia REPL, hit `]` to enter the Pkg REPL, and then run
+```julia
+add https://github.com/FishboneChiang/SDPJSolver.jl
+```
+
 ## The optimization problem
 The function
 ```julia
-sdp(c, A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
+sdp(c, A, C, B, b;
+    β=0.1, γ=0.9, Ωp=1, Ωd=1,
+    ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
+    iterMax=200, prec=300,
+    restart=true, minStep=1e-10, maxOmega=1e50, OmegaStep=1e5)
 ```
-
 solves the following SDP:
 
 ### Primal
@@ -61,7 +70,10 @@ After a search direction is obtained, the step size is determined by requiring t
 ## The feasibility problem
 The function
 ```julia
-findFeasible(A, C, B, b; β = 0.1, Ωp = 1, Ωd = 1, ϵ_gap = 1e-10, ϵ_primal = 1e-10, ϵ_dual = 1e-10, iterMax = 200, prec = 300)
+findFeasible(A, C, B, b;
+    β=0.1, Ωp=1, Ωd=1, γ=0.9, 
+    ϵ_gap=1e-10, ϵ_primal=1e-10, ϵ_dual=1e-10,
+    iterMax=200, prec=300, restart=true, minStep=1e-10)
 ```
 determines whether the SDP above is feasible. Note that the arguments are basically the same as `sdp()` except no vector `c` for the objective function is needed. The function converts the feasibility problem to the following optimization problem:
 
@@ -75,7 +87,7 @@ $$
 
 If $t^* \geq 0$, the problem is infeasible; otherwise, the problem is feasible.
 
-⚠️ Known issue: It seems that `findFeasible()` will fail if the feasible set is unbounded but works fine when the problem is infeasible.
+⚠️ Known issue: `findFeasible()` will not terminate if the feasible set is unbounded so that a minimal value of `t` does not exist, but it works fine when the problem is infeasible.
 
 ## Inputs
 
@@ -102,9 +114,13 @@ setArithmeticType(Float64)
 
 `β`: factor of reduction in μ in each step
 
+`γ`: factor of reduction in the step size for backtracking line search
+
 `Ωp` and `Ωd` are initial values for the matrices X and Y: $X = Ω_p I, Y = Ω_d I$
 
-`mode`: can be either ```"opt"``` or ```"feas"```.
+`restart`: `true` or `false`. If at any step in the iteration, the primal/dual step sizes are smaller than `minStep`, the program restarts with `Ωp` and `Ωd` rescaled by a factor of `OmegaStep`, until any of them exceeds `maxOmega`.
+
+<!-- `mode`: can be either ```"opt"``` or ```"feas"```. -->
 
 The iteration terminates if any of the following occurs:
 - The function `sdp()` is used, and the duality gap, primal infeasibility, and dual infeasibility are below `ϵ_gap`, `ϵ_primal`, and `ϵ_dual`, respectively.
