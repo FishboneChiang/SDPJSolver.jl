@@ -36,6 +36,8 @@ using Test
         B = Matrix{T}(undef, 2, 0)
         b = Array{T}(undef, 0)
 
+        SDPJSolver.setSparseMode(true)
+
         prob = SDPJSolver.sdp(c, A, C, B, b)
         println("\nStatus: ", prob["status"])
         println("Optimal value: ", prob["pObj"], "\n")

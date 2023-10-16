@@ -148,6 +148,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
             end
             @threads for (i, j) in id
                 S[l][i, j] = sum(SS1[i] .* SS2[j])
+                S[l][j, i] = S[l][i, j]
             end
             # @threads for i in 1:m
             #     for j in i:m
