@@ -131,6 +131,8 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     # calculate residue
     P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
 
+    id = [(i,j) for i in 1:m for j in i:m]
+
     # calculate Schur complement
     begin
         S = [zeros(T, m, m) for l in 1:L]
@@ -144,12 +146,15 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
                 SS1[i] = Y[l] * AA[l][i]
                 SS2[i] = AA[l][i] * invX[l]
             end
-            @threads for i in 1:m
-                for j in i:m
-                    S[l][i, j] = sum(SS1[i] .* SS2[j])
-                    S[l][j, i] = S[l][i, j]
-                end
+            @threads for (i, j) in id
+                S[l][i, j] = sum(SS1[i] .* SS2[j])
             end
+            # @threads for i in 1:m
+            #     for j in i:m
+            #         S[l][i, j] = sum(SS1[i] .* SS2[j])
+            #         S[l][j, i] = S[l][i, j]
+            #     end
+            # end
         end
     end
 
