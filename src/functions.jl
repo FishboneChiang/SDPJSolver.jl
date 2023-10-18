@@ -52,25 +52,29 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
 
     # calculate Schur complement
-    begin
+    @time begin
+        # First, get the inverse of X
         S = [zeros(T, m, m) for l in 1:L]
         invX = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
-            @inbounds invX[l] = X[l] \ I
+            @inbounds invX[l] = inv(X[l])
         end
-        @threads for i in 1:m
-            for l in 1:L
-                @inbounds SS = Y[l] * A[l][i, :, :] * invX[l]
-                for j in i:m
-                    @inbounds S[l][i, j] = sum(SS .* A[l][j, :, :])
-                    @inbounds S[l][j, i] = S[l][i, j]
-                end
-            end
+        # Second, calculate all the Y * A[i] * X^(-1)
+        id = [(i, l) for l in 1:L for i in 1:m]
+        SS = [Array{Matrix{T}}(undef, m) for l in 1:L]
+        @threads for (i, l) in id
+            @inbounds SS[l][i] = Y[l] * A[l][i, :, :] * invX[l]
+        end
+        # And finally the Schur matrix
+        id = [(i, j, l) for l in 1:L for i in 1:m for j in i:m]
+        @threads for (i, j, l) in id
+            @inbounds S[l][i, j] = dot(SS[l][i], A[l][j, :, :])
+            @inbounds S[l][j, i] = S[l][i, j]
         end
     end
 
     # Predictor
-    begin
+    @time begin
         M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
         v = zeros(T, m)
         Z = Array{Matrix{T}}(undef, L)
@@ -90,7 +94,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     end
 
     # Corrector
-    begin
+    @time begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
@@ -131,36 +135,31 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     # calculate residue
     P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
 
-    id = [(i,j) for i in 1:m for j in i:m]
+    id = [(i, j) for i in 1:m for j in i:m]
 
     # calculate Schur complement
-    begin
+    @time begin
         S = [zeros(T, m, m) for l in 1:L]
         invX = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
             @inbounds invX[l] = X[l] \ I
         end
-        for l in 1:L
-            SS1, SS2 = Array{Matrix{T}}(undef, m), Array{Matrix{T}}(undef, m)
-            @threads for i in 1:m
-                SS1[i] = Y[l] * AA[l][i]
-                SS2[i] = AA[l][i] * invX[l]
-            end
-            @threads for (i, j) in id
-                S[l][i, j] = sum(SS1[i] .* SS2[j])
-                S[l][j, i] = S[l][i, j]
-            end
-            # @threads for i in 1:m
-            #     for j in i:m
-            #         S[l][i, j] = sum(SS1[i] .* SS2[j])
-            #         S[l][j, i] = S[l][i, j]
-            #     end
-            # end
+        id = [(i, l) for l in 1:L for i in 1:m]
+        SS1 = [Array{Matrix{T}}(undef, m) for l in 1:L]
+        SS2 = [Array{Matrix{T}}(undef, m) for l in 1:L]
+        @threads for (i, l) in id
+            SS1[l][i] = Y[l] * AA[l][i]
+            SS2[l][i] = invX[l] * AA[l][i]
+        end
+        id = [(i, j, l) for l in 1:L for i in 1:m for j in i:m]
+        @threads for (i,j,l) in id
+            S[l][i, j] = dot(SS1[l][i], SS2[l][j])
+            S[l][j, i] = S[l][i, j]
         end
     end
 
     # Predictor
-    begin
+    @time begin
         M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
         v = zeros(T, m)
         Z = Array{Matrix{T}}(undef, L)
@@ -180,7 +179,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     end
 
     # Corrector
-    begin
+    @time begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))

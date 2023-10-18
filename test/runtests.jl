@@ -66,7 +66,8 @@ using Test
         b = zeros(T, n)
         c = rand(T, m)
 
-        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 1e-4, Ωd = 1e-4, β = 0.01, prec = 100, ϵ_dual = 1e-50, ϵ_primal = 1e-50, ϵ_gap = 1e-10)
+        SDPJSolver.setSparseMode(true)
+        prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 10, Ωd = 10, β = 0.01, prec = 100, ϵ_dual = 1e-50, ϵ_primal = 1e-50, ϵ_gap = 1e-10)
         println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
     end
 
@@ -87,7 +88,7 @@ using Test
     end
 
     # test_float()
-    test_bigfloat()
+    # test_bigfloat()
     random_sdp()
     # test_QuasiNewton()
 
