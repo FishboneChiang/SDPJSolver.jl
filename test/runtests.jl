@@ -87,8 +87,8 @@ using Test
         prob = SDPJSolver.sdpBFGS(c, A, C, x0; β = 0.1)
     end
 
-    # test_float()
-    # test_bigfloat()
+    test_float()
+    test_bigfloat()
     random_sdp()
     # test_QuasiNewton()
 

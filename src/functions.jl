@@ -52,7 +52,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     P, p, d, R = getResidue(μ, x, X, y, Y, c, A, C, B, b)
 
     # calculate Schur complement
-    @time begin
+    begin
         # First, get the inverse of X
         S = [zeros(T, m, m) for l in 1:L]
         invX = Array{Matrix{T}}(undef, L)
@@ -74,7 +74,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     end
 
     # Predictor
-    @time begin
+    begin
         M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
         v = zeros(T, m)
         Z = Array{Matrix{T}}(undef, L)
@@ -94,7 +94,7 @@ function NewtonStep(β, μ, x, X, y, Y, c, A, C, B, b)
     end
 
     # Corrector
-    @time begin
+    begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
@@ -138,7 +138,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     id = [(i, j) for i in 1:m for j in i:m]
 
     # calculate Schur complement
-    @time begin
+    begin
         S = [zeros(T, m, m) for l in 1:L]
         invX = Array{Matrix{T}}(undef, L)
         @threads for l in 1:L
@@ -159,7 +159,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     end
 
     # Predictor
-    @time begin
+    begin
         M = vcat(hcat(sum(S), -B), hcat(transpose(B), zeros(n, n)))
         v = zeros(T, m)
         Z = Array{Matrix{T}}(undef, L)
@@ -179,7 +179,7 @@ function NewtonStepSparse(β, μ, x, X, y, Y, c, A, AA, C, B, b)
     end
 
     # Corrector
-    @time begin
+    begin
         r = [sum((X[l] + dX[l]) .* (Y[l] + dY[l])) / μ[l] / size(X[l])[1] for l in 1:L]
         γ = [max(r[l] < 1 ? r[l]^2 : r[l], β) for l in 1:L]
         # if all(isposdef.(X .+ dX)) && all(isposdef.(Y .+ dY))
