@@ -36,7 +36,7 @@ using Test
         B = Matrix{T}(undef, 2, 0)
         b = Array{T}(undef, 0)
 
-        SDPJSolver.setSparseMode(true)
+        # SDPJSolver.setSparseMode(true)
 
         prob = SDPJSolver.sdp(c, A, C, B, b)
         println("\nStatus: ", prob["status"])
@@ -66,7 +66,7 @@ using Test
         b = zeros(T, n)
         c = rand(T, m)
 
-        SDPJSolver.setSparseMode(true)
+        # SDPJSolver.setSparseMode(true)
         prob = SDPJSolver.findFeasible(A, C, B, b; Ωp = 10, Ωd = 10, β = 0.01, prec = 100, ϵ_dual = 1e-50, ϵ_primal = 1e-50, ϵ_gap = 1e-10)
         println("\np* = ", prob["pObj"], "\n\n", "Status: ", prob["status"])
     end
